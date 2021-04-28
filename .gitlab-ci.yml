@@ -1,0 +1,25 @@
+stages:
+  - test
+  - publish
+
+test_app:
+  image: gradle:6.3-jdk11
+  stage: test
+  script:
+    - gradle test --no-daemon
+  artifacts:
+    when: always
+    expire_in: 2 weeks
+    reports:
+      junit: build/test-results/test/**/TEST-*.xml
+
+publish_app:
+  image: docker:stable
+  services:
+    - docker:stable-dind
+  stage: publish
+  before_script:
+    - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN $CI_REGISTRY
+  script:
+    - docker build -t $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA .
+    - docker push $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA
